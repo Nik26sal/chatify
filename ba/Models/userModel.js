@@ -29,13 +29,7 @@ const userSchema = new mongoose.Schema({
         type:String,
         enum:['online','offline']
     },
-    friends:[
-        {
-            type:mongoose.Schema.Types.ObjectId,
-            ref:'User'
-        }
-    ],
-    group:[
+    chat:[
         {
             type:mongoose.Schema.Types.ObjectId,
             ref:'Chat'

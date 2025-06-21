@@ -10,11 +10,7 @@ const addUser = async (req, res) => {
         }
         const exsitedUser = await User.findOne({ email });
         if (exsitedUser) {
-            if (!exsitedUser.isVerified) {
-                await User.findByIdAndDelete(exsitedUser._id);
-            } else {
-                return res.status(401).json({ message: "This user already exists." });
-            }
+            return res.status(401).json({ message: "This user already exists." });
         }
         let avatar = null;
         if (req.file?.fieldname === 'avatar') {

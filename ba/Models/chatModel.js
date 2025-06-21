@@ -17,11 +17,7 @@ const chatModel = new mongoose.Schema({
     ],
     title:{
         type:String,
-        default:"Single Chat"
-    },
-    description:{
-        type:String,
-        default:"Happy Chat With Chatify"
+        enum:['singleChat', 'groupChat']
     }
 },
 {
