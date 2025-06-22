@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const chatModel = new mongoose.Schema({
+    chatAvatar:{
+        type:String,
+        required:true
+    },
     message:[{
         type:mongoose.Schema.Types.ObjectId,
         ref:'Message'
@@ -18,6 +22,14 @@ const chatModel = new mongoose.Schema({
     title:{
         type:String,
         enum:['singleChat', 'groupChat']
+    },
+    chatName:{
+        type:String,
+        required:true
+    },
+    chatdescription:{
+        type:String,
+        default:"Have a Good Group Chat with Chatify"
     }
 },
 {
