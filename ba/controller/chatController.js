@@ -5,22 +5,24 @@ const { uploadCloudinary } = require('../cloudItems/cloudinary.js');
 const createChat = async (req, res) => {
     try {
         const userId = req.user._id;
-        const { groupMembersId, groupName} = req.body;
+        const { groupMembersId, groupName } = req.body;
         let groupChatAvatar = null;
-                if (req.file?.fieldname === 'groupChatAvatar') {
-                    try {
-                        const avatarUploadResult = await uploadCloudinary(req.file.path);
-                        if (!avatarUploadResult?.secure_url) {
-                            return res.status(500).json({ message: "Failed to upload avatar." });
-                        }
-                        groupChatAvatar = avatarUploadResult.secure_url;
-                    } catch (uploadError) {
-                        console.error("Avatar Upload Error:", uploadError);
-                        return res.status(500).json({ message: "Error uploading avatar." });
-                    }
-                } else {
-                    return res.status(400).json({ message: "Avatar is required." });
+
+        if (req.file?.fieldname === 'groupChatAvatar') {
+            try {
+                const avatarUploadResult = await uploadCloudinary(req.file.path);
+                if (!avatarUploadResult?.secure_url) {
+                    return res.status(500).json({ message: "Failed to upload avatar." });
                 }
+                groupChatAvatar = avatarUploadResult.secure_url;
+            } catch (uploadError) {
+                console.error("Avatar Upload Error:", uploadError);
+                return res.status(500).json({ message: "Error uploading avatar." });
+            }
+        } else if (!groupName) {
+            return res.status(400).json({ message: "Avatar is required for group chats." });
+        }
+
         if (!Array.isArray(groupMembersId) || groupMembersId.length < 1) {
             return res.status(400).json({ message: "Friend ID array is required" });
         }
@@ -68,6 +70,7 @@ const createChat = async (req, res) => {
             chatName: chatName,
             chatAvatar: chatAvatar
         });
+
         const allMembers = [userId, ...groupMembers];
         await User.updateMany(
             { _id: { $in: allMembers } },
@@ -121,6 +124,9 @@ const changeGroupName = async (req, res) => {
         if (chat.title === 'singleChat') {
             return res.status(400).json({ message: "You are unable to change the name of a single chat." });
         }
+        if (user._id.toString() !== chat.createdBy.toString()) {
+            return res.status(403).json({ message: "Only Admin Allowed to Change the Name of Group" });
+        }
         chat.chatName = newChatName;
         await chat.save();
 
@@ -131,4 +137,134 @@ const changeGroupName = async (req, res) => {
     }
 };
 
-module.exports = { createChat, deleteChat, changeGroupName };
+const addMember = async (req, res) => {
+    try {
+        const user = req.user;
+        const { chatId, newUserId } = req.body;
+        if (!chatId || !newUserId) {
+            return res.status(400).json({ message: "Please provide chatId and newUserId" });
+        }
+        const chat = await Chat.findById(chatId);
+        if (!chat) {
+            return res.status(404).json({ message: "Chat not found" });
+        }
+        if (chat.title === 'singleChat') {
+            return res.status(400).json({ message: "Cannot add members to a single chat." });
+        }
+        if (user._id.toString() !== chat.createdBy.toString()) {
+            return res.status(403).json({ message: "Only Admin Allowed to Add Members" });
+        }
+        if (chat.members.map(id => id.toString()).includes(newUserId.toString())) {
+            return res.status(400).json({ message: "User is already a member of this chat" });
+        }
+        chat.members.push(newUserId);
+        await chat.save();
+        await User.findByIdAndUpdate(newUserId, { $push: { chat: chat._id } });
+        return res.status(200).json({ message: "Member added successfully", chat });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+const removeMember = async (req, res) => {
+    try {
+        const user = req.user;
+        const { chatId, removeUserId } = req.body;
+        if (!chatId || !removeUserId) {
+            return res.status(400).json({ message: "Please provide chatId and removeUserId" });
+        }
+        const chat = await Chat.findById(chatId);
+        if (!chat) {
+            return res.status(404).json({ message: "Chat not found" });
+        }
+        if (chat.title === 'singleChat') {
+            return res.status(400).json({ message: "Cannot remove members from a single chat." });
+        }
+        if (user._id.toString() !== chat.createdBy.toString()) {
+            return res.status(403).json({ message: "Only Admin Allowed to Remove Members" });
+        }
+        if (!chat.members.map(id => id.toString()).includes(removeUserId.toString())) {
+            return res.status(400).json({ message: "This user is not a member of this chat" });
+        }
+        chat.members = chat.members.filter(id => id.toString() !== removeUserId.toString());
+        await chat.save();
+        await User.findByIdAndUpdate(removeUserId, { $pull: { chat: chat._id } });
+        return res.status(200).json({ message: "Member removed successfully", chat });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+const changeDescription = async (req, res) => {
+    try {
+        const user = req.user;
+        const { description, chatId } = req.body;
+        if (!description || !chatId) {
+            return res.status(400).json({ message: "Please provide a description and chatId to change" });
+        }
+        const chat = await Chat.findById(chatId);
+        if (!chat) {
+            return res.status(404).json({ message: "Chat not found" });
+        }
+        if (user._id.toString() !== chat.createdBy.toString()) {
+            return res.status(403).json({ message: "Only Admin Allowed to Change Description" });
+        }
+        chat.description = description;
+        await chat.save();
+        return res.status(200).json({ message: "Description is updated Successfully", chat });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+const changeGroupAvatar = async (req, res) => {
+    try {
+        const user = req.user;
+        const { chatId } = req.body;
+
+        if (!chatId) {
+            return res.status(400).json({ message: "Please provide chatId" });
+        }
+
+        const chat = await Chat.findById(chatId);
+        if (!chat) {
+            return res.status(404).json({ message: "Chat not found" });
+        }
+        if (chat.title === 'singleChat') {
+            return res.status(400).json({ message: "Cannot change avatar for a single chat." });
+        }
+        if (user._id.toString() !== chat.createdBy.toString()) {
+            return res.status(403).json({ message: "Only Admin Allowed to Change Group Avatar" });
+        }
+        if (!req.file || req.file.fieldname !== 'groupChatAvatar') {
+            return res.status(400).json({ message: "Please upload a groupChatAvatar file" });
+        }
+        try {
+            const avatarUploadResult = await uploadCloudinary(req.file.path);
+            if (!avatarUploadResult?.secure_url) {
+                return res.status(500).json({ message: "Failed to upload avatar." });
+            }
+            chat.chatAvatar = avatarUploadResult.secure_url;
+            await chat.save();
+            return res.status(200).json({ message: "Group avatar changed successfully", chat });
+        } catch (uploadError) {
+            console.error("Avatar Upload Error:", uploadError);
+            return res.status(500).json({ message: "Error uploading avatar." });
+        }
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+module.exports = {
+    createChat,
+    deleteChat,
+    changeGroupName,
+    addMember,
+    removeMember,
+    changeDescription,
+    changeGroupAvatar
+};
