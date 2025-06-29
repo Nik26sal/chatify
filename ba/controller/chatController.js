@@ -6,27 +6,10 @@ const createChat = async (req, res) => {
     try {
         const userId = req.user._id;
         const { groupMembersId, groupName } = req.body;
-        let groupChatAvatar = null;
-
-        if (req.file?.fieldname === 'groupChatAvatar') {
-            try {
-                const avatarUploadResult = await uploadCloudinary(req.file.path);
-                if (!avatarUploadResult?.secure_url) {
-                    return res.status(500).json({ message: "Failed to upload avatar." });
-                }
-                groupChatAvatar = avatarUploadResult.secure_url;
-            } catch (uploadError) {
-                console.error("Avatar Upload Error:", uploadError);
-                return res.status(500).json({ message: "Error uploading avatar." });
-            }
-        } else if (!groupName) {
-            return res.status(400).json({ message: "Avatar is required for group chats." });
-        }
-
         if (!Array.isArray(groupMembersId) || groupMembersId.length < 1) {
             return res.status(400).json({ message: "Friend ID array is required" });
         }
-
+        
         let groupMembers = [];
         for (const groupMemberId of groupMembersId) {
             if (userId.toString() === groupMemberId) {
@@ -38,9 +21,10 @@ const createChat = async (req, res) => {
             }
             groupMembers.push(groupMemberId);
         }
-
+        
         let title = (groupMembers.length === 1) ? 'singleChat' : 'groupChat';
         let chatName;
+        let groupChatAvatar = null;
         let chatAvatar;
 
         if (title === 'singleChat') {
@@ -55,6 +39,20 @@ const createChat = async (req, res) => {
             chatName = friendUser.name;
             chatAvatar = friendUser.avatar;
         } else {
+            if (req.file?.fieldname === 'groupChatAvatar') {
+            try {
+                const avatarUploadResult = await uploadCloudinary(req.file.path);
+                if (!avatarUploadResult?.secure_url) {
+                    return res.status(500).json({ message: "Failed to upload avatar." });
+                }
+                groupChatAvatar = avatarUploadResult.secure_url;
+            } catch (uploadError) {
+                console.error("Avatar Upload Error:", uploadError);
+                return res.status(500).json({ message: "Error uploading avatar." });
+            }
+        } else if (!groupName) {
+            return res.status(400).json({ message: "Avatar is required for group chats." });
+        }
             if (groupName && groupChatAvatar) {
                 chatName = groupName;
                 chatAvatar = groupChatAvatar;
@@ -259,6 +257,7 @@ const changeGroupAvatar = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error" });
     }
 };
+
 module.exports = {
     createChat,
     deleteChat,
