@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 function LoginForm() {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
     });
+    const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -19,7 +21,6 @@ function LoginForm() {
     const handleSubmit = (e) => {
         e.preventDefault();
         console.log('Login data:', formData);
-        // Handle login logic here (API call, validation, etc.)
     };
 
     return (
@@ -34,7 +35,6 @@ function LoginForm() {
                     Login to Chatify
                 </h2>
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Email */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                         <input
@@ -46,8 +46,6 @@ function LoginForm() {
                             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                     </div>
-
-                    {/* Password */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                         <input
@@ -60,7 +58,6 @@ function LoginForm() {
                         />
                     </div>
 
-                    {/* Submit */}
                     <motion.button
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.95 }}
@@ -70,6 +67,14 @@ function LoginForm() {
                         Login <Send size={18} />
                     </motion.button>
                 </form>
+                 <motion.button
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    className="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-indigo-700 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
+                                    onClick={() => navigate(-1)}
+                                >
+                                    Back <Send size={18} />
+                                </motion.button>
             </motion.div>
         </div>
     );

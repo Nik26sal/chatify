@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
+import { Link ,NavLink} from 'react-router-dom';
+
 
 function Entry() {
     return (
@@ -7,9 +9,9 @@ function Entry() {
             <header className="flex justify-between items-center p-6 max-w-6xl mx-auto">
                 <div className="text-2xl font-bold text-yellow-300">Chatify</div>
                 <nav className="space-x-6 text-white font-medium">
-                    <a href="#features" className="hover:underline">Features</a>
-                    <a href="#demo" className="hover:underline">Demo</a>
-                    <a href="#get-started" className="hover:underline">Get Started</a>
+                    <Link to="/register" className="hover:underline">Register</Link>
+                    <Link to="/login" className="hover:underline">Login</Link>
+                    <Link to="/home" className="hover:underline">Get Started</Link>
                 </nav>
             </header>
             <motion.section

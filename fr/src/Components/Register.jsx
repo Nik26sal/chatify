@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 function Register() {
     const [formData, setFormData] = useState({
@@ -9,6 +10,8 @@ function Register() {
         password: '',
         avatar: null,
     });
+
+    const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { name, value, files } = e.target;
@@ -35,7 +38,6 @@ function Register() {
                     Create Your Account
                 </h2>
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Name */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                         <input
@@ -47,8 +49,6 @@ function Register() {
                             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                     </div>
-
-                    {/* Email */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                         <input
@@ -61,7 +61,6 @@ function Register() {
                         />
                     </div>
 
-                    {/* Password */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                         <input
@@ -74,7 +73,6 @@ function Register() {
                         />
                     </div>
 
-                    {/* Avatar */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Avatar</label>
                         <input
@@ -85,8 +83,6 @@ function Register() {
                             className="w-full"
                         />
                     </div>
-
-                    {/* Submit Button */}
                     <motion.button
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.95 }}
@@ -96,6 +92,14 @@ function Register() {
                         Register <Send size={18} />
                     </motion.button>
                 </form>
+                <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-indigo-700 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
+                    onClick={() => navigate(-1)}
+                >
+                    Back <Send size={18} />
+                </motion.button>
             </motion.div>
         </div>
     );

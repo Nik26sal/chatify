@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
 function Profile() {
-    // Fake authenticated user
     const [user, setUser] = useState({
         name: 'John Doe',
         email: 'john.doe@example.com',
@@ -27,7 +26,6 @@ function Profile() {
 
     const handleLogout = () => {
         alert('You have been logged out.');
-        // Add logout logic here (clear tokens, redirect, etc.)
     };
 
     return (

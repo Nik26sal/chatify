@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link, NavLink } from 'react-router-dom';
 
 const navVariants = {
   hidden: { y: -50, opacity: 0 },
@@ -17,18 +18,47 @@ function Navbar() {
       animate="visible"
       className="flex justify-around items-center p-4 bg-white text-gray-800 shadow-md"
     >
-      <div className="text-xl font-bold text-blue-600">Chatify</div>
+      
+      <Link to ="/">
+        <div className="text-xl font-bold text-blue-600">Chatify</div>
+      </Link>
       <div className="flex justify-between w-1/2 gap-6 text-base font-medium">
-        {["Chats", "Profile", "Setting", "Contact-Us"].map((item, idx) => (
-          <motion.button
-            key={idx}
-            variants={hoverVariant}
-            whileHover="hover"
-            className="px-3 py-1 rounded-md transition duration-200 hover:bg-blue-100"
-          >
-            {item}
-          </motion.button>
-        ))}
+        <NavLink
+          to="/home"
+          className={({ isActive }) =>
+            `px-3 py-1 rounded-md transition duration-200 hover:bg-blue-100 ${isActive ? "bg-blue-100 text-blue-600 font-bold" : ""
+            }`
+          }
+        >
+          Chats
+        </NavLink>
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            `px-3 py-1 rounded-md transition duration-200 hover:bg-blue-100 ${isActive ? "bg-blue-100 text-blue-600 font-bold" : ""
+            }`
+          }
+        >
+          Profile
+        </NavLink>
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `px-3 py-1 rounded-md transition duration-200 hover:bg-blue-100 ${isActive ? "bg-blue-100 text-blue-600 font-bold" : ""
+            }`
+          }
+        >
+          Setting
+        </NavLink>
+        <NavLink
+          to="/contact"
+          className={({ isActive }) =>
+            `px-3 py-1 rounded-md transition duration-200 hover:bg-blue-100 ${isActive ? "bg-blue-100 text-blue-600 font-bold" : ""
+            }`
+          }
+        >
+          Contact-Us
+        </NavLink>
       </div>
 
       <div className="flex items-center gap-3">
