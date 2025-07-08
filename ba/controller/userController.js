@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken')
 
 const addUser = async (req, res) => {
     try {
+        console.log("Hit")
         const { name, email, password } = req.body;
         if (!name || !email || !password) {
             return res.status(400).json({ message: "Submit all fields Please" });

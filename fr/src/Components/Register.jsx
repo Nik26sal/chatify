@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios'
 
 function Register() {
     const [formData, setFormData] = useState({
@@ -21,10 +22,32 @@ function Register() {
         }));
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        console.log('Submitted:', formData);
-    };
+    const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+        const data = new FormData();
+        data.append("name", formData.name);
+        data.append("email", formData.email);
+        data.append("password", formData.password);
+        if (formData.avatar) {
+            data.append("avatar", formData.avatar);
+        }
+
+        const response = await axios.post(
+            "http://localhost:3030/api/user/addUser",
+            data,
+            {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            }
+        );
+        console.log(response);
+        navigate('/login')
+    } catch (error) {
+        console.log(error);
+    }
+};
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-600 px-4">

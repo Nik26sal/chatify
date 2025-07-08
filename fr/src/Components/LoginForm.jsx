@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 function LoginForm() {
     const [formData, setFormData] = useState({
@@ -18,9 +19,26 @@ function LoginForm() {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Login data:', formData);
+        try {
+            const data = new FormData();
+            data.append("email", formData.email);
+            data.append("password", formData.password);
+            const response = await axios.post(
+                "http://localhost:3030/api/user/login",
+                data,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+            console.log(response);
+            navigate('/login')
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     return (
@@ -67,14 +85,14 @@ function LoginForm() {
                         Login <Send size={18} />
                     </motion.button>
                 </form>
-                 <motion.button
-                                    whileHover={{ scale: 1.03 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    className="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-indigo-700 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
-                                    onClick={() => navigate(-1)}
-                                >
-                                    Back <Send size={18} />
-                                </motion.button>
+                <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-indigo-700 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
+                    onClick={() => navigate(-1)}
+                >
+                    Back <Send size={18} />
+                </motion.button>
             </motion.div>
         </div>
     );
