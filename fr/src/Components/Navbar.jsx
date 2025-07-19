@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { Link, NavLink } from 'react-router-dom';
+import { useContext } from "react";
+import { UserContext } from "../contextApi/UserContext.jsx";
 
 const navVariants = {
   hidden: { y: -50, opacity: 0 },
@@ -9,8 +11,8 @@ const navVariants = {
 const hoverVariant = {
   hover: { scale: 1.1, color: "#2563eb" },
 };
-
 function Navbar() {
+  const {user} = useContext(UserContext);
   return (
     <motion.div
       variants={navVariants}
@@ -63,13 +65,13 @@ function Navbar() {
 
       <div className="flex items-center gap-3">
         <motion.img
-          src="avatar.png"
+         src={user?.avatar}
           alt="avatar"
           className="w-8 h-8 rounded-full object-cover border-2 border-blue-400"
           whileHover={{ scale: 1.15 }}
           transition={{ type: "spring", stiffness: 300 }}
         />
-        <h1 className="text-sm font-semibold">UserName</h1>
+        <h1 className="text-sm font-semibold">{user?.name}</h1>
       </div>
     </motion.div>
   );

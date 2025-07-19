@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState, useContext } from 'react';
+import { UserContext } from '../contextApi/UserContext.jsx';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +10,9 @@ function LoginForm() {
         email: '',
         password: '',
     });
+    const [requesting, setRequesting] = useState(false);
     const navigate = useNavigate();
+    const { setUser } = useContext(UserContext);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -21,24 +24,30 @@ function LoginForm() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setRequesting(true);
         try {
-            const data = new FormData();
-            data.append("email", formData.email);
-            data.append("password", formData.password);
             const response = await axios.post(
                 "http://localhost:3030/api/user/login",
-                data,
+                {
+                    email: formData.email,
+                    password: formData.password,
+                },
                 {
                     headers: {
-                        "Content-Type": "multipart/form-data",
+                        "Content-Type": "application/json",
                     },
+                    withCredentials: true
                 }
             );
-            console.log(response);
-            navigate('/login')
+            if (response.data && response.data.user) {
+                setUser(response.data.user);
+                console.log(response.data.user)
+                navigate('/home');
+            }
         } catch (error) {
             console.log(error);
         }
+        setRequesting(false);
     };
 
     return (
@@ -75,14 +84,30 @@ function LoginForm() {
                             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                     </div>
-
                     <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.05, backgroundColor: "#4f46e5" }}
+                        whileTap={{ scale: 0.97 }}
                         type="submit"
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
+                        disabled={requesting}
+                        className={`w-full py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition font-semibold
+      ${requesting
+                                ? "bg-indigo-400 cursor-not-allowed"
+                                : "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 hover:from-indigo-700 hover:to-pink-600 text-white shadow-lg"
+                            }`}
                     >
-                        Login <Send size={18} />
+                        {requesting ? (
+                            <>
+                                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                                </svg>
+                                Login...
+                            </>
+                        ) : (
+                            <>
+                                Login <Send size={18} />
+                            </>
+                        )}
                     </motion.button>
                 </form>
                 <motion.button

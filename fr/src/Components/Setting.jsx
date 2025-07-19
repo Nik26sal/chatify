@@ -1,9 +1,14 @@
-import React, { useState } from "react";
+import { useState ,useContext} from "react";
+import { UserContext } from "../contextApi/UserContext";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+
 
 function Setting() {
   const [theme, setTheme] = useState("light");
   const [showConfirm, setShowConfirm] = useState(false);
-
+  const {setUser} = useContext(UserContext)
+  const navigate = useNavigate();
   const handleThemeChange = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
@@ -12,9 +17,25 @@ function Setting() {
     setShowConfirm(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async() => {
     setShowConfirm(false);
-    alert("Account deleted (demo)");
+   try {
+            const response = await axios.delete(
+                "http://localhost:3030/api/user/deleteAccount",
+                {
+                   headers: {
+                        "Content-Type": "application/json",
+                    },
+                    withCredentials: true
+                }
+            );
+            if (response) {
+                setUser(null);
+                navigate('/login');
+            }
+        } catch (error) {
+            console.log(error);
+        }
   };
 
   return (

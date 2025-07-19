@@ -11,6 +11,7 @@ function Register() {
         password: '',
         avatar: null,
     });
+    const [requesting, setRequesting] = useState(false)
 
     const navigate = useNavigate();
 
@@ -23,31 +24,32 @@ function Register() {
     };
 
     const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-        const data = new FormData();
-        data.append("name", formData.name);
-        data.append("email", formData.email);
-        data.append("password", formData.password);
-        if (formData.avatar) {
-            data.append("avatar", formData.avatar);
-        }
-
-        const response = await axios.post(
-            "http://localhost:3030/api/user/addUser",
-            data,
-            {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
+        e.preventDefault();
+        setRequesting(true);
+        try {
+            const data = new FormData();
+            data.append("name", formData.name);
+            data.append("email", formData.email);
+            data.append("password", formData.password);
+            if (formData.avatar) {
+                data.append("avatar", formData.avatar);
             }
-        );
-        console.log(response);
-        navigate('/login')
-    } catch (error) {
-        console.log(error);
-    }
-};
+            const response = await axios.post(
+                "http://localhost:3030/api/user/addUser",
+                data,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+            console.log(response);
+            navigate('/login')
+        } catch (error) {
+            console.log(error);
+        }
+        setRequesting(false);
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-600 px-4">
@@ -107,12 +109,29 @@ function Register() {
                         />
                     </div>
                     <motion.button
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ scale: 1.05, backgroundColor: "#4f46e5" }}
+                        whileTap={{ scale: 0.97 }}
                         type="submit"
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
+                        disabled={requesting}
+                        className={`w-full py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition font-semibold
+      ${requesting
+                                ? "bg-indigo-400 cursor-not-allowed"
+                                : "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 hover:from-indigo-700 hover:to-pink-600 text-white shadow-lg"
+                            }`}
                     >
-                        Register <Send size={18} />
+                        {requesting ? (
+                            <>
+                                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                                </svg>
+                                Registering...
+                            </>
+                        ) : (
+                            <>
+                                Register <Send size={18} />
+                            </>
+                        )}
                     </motion.button>
                 </form>
                 <motion.button

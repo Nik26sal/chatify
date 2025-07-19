@@ -1,15 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { UserContext } from '../contextApi/UserContext.jsx';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function Profile() {
-    const [user, setUser] = useState({
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        avatar: 'https://i.pravatar.cc/150?img=32',
-    });
+    const { user, setUser, loading } = useContext(UserContext); 
+    const navigate = useNavigate();
 
     const [editMode, setEditMode] = useState(false);
-    const [formData, setFormData] = useState({ ...user });
+    const [formData, setFormData] = useState({});
+    const [requesting, setRequesting] = useState(false);
+
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate('/login');
+        }
+        if (user) {
+            setFormData({ ...user });
+        }
+    }, [user, loading, navigate]);
 
     const handleChange = (e) => {
         const { name, value, files } = e.target;
@@ -24,9 +34,21 @@ function Profile() {
         setEditMode(false);
     };
 
-    const handleLogout = () => {
-        alert('You have been logged out.');
+    const handleLogout = async (e) => {
+        e.preventDefault();
+        setRequesting(true);
+        try {
+            await axios.post("http://localhost:3030/api/user/logout", {}, { withCredentials: true });
+            setUser(null);
+            navigate('/');
+        } catch (error) {
+            console.log(error);
+        }
+        setRequesting(false);
     };
+
+    if (loading) return <div className="text-center text-white mt-10">Loading...</div>;
+    if (!user) return null;
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 px-4">
@@ -37,9 +59,9 @@ function Profile() {
                 className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm text-center"
             >
                 <img
-                    src={formData.avatar}
+                    src={formData?.avatar || 'avatar.png'}
                     alt="Avatar"
-                    className="w-28 h-28 mx-auto rounded-full border-4 border-indigo-500 mb-4"
+                    className="w-28 h-28 mx-auto rounded-full border-4 border-indigo-500 mb-4 object-cover"
                 />
 
                 {editMode ? (
@@ -47,14 +69,14 @@ function Profile() {
                         <input
                             type="text"
                             name="name"
-                            value={formData.name}
+                            value={formData?.name || ''}
                             onChange={handleChange}
                             className="w-full mb-2 px-4 py-2 border rounded-lg text-center"
                         />
                         <input
                             type="email"
                             name="email"
-                            value={formData.email}
+                            value={formData?.email || ''}
                             onChange={handleChange}
                             className="w-full mb-4 px-4 py-2 border rounded-lg text-center"
                         />
@@ -68,8 +90,8 @@ function Profile() {
                     </>
                 ) : (
                     <>
-                        <h2 className="text-2xl font-bold text-gray-800 mb-1">{user.name}</h2>
-                        <p className="text-gray-500 mb-6">{user.email}</p>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-1">{user?.name}</h2>
+                        <p className="text-gray-500 mb-6">{user?.email}</p>
                     </>
                 )}
 
@@ -93,7 +115,7 @@ function Profile() {
                         onClick={handleLogout}
                         className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition"
                     >
-                        Logout
+                        {requesting ? 'Logging out...' : 'Logout'}
                     </button>
                 </div>
             </motion.div>
