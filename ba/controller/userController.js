@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken')
 
 const addUser = async (req, res) => {
     try {
-        console.log("Hit")
         const { name, email, password } = req.body;
         if (!name || !email || !password) {
             return res.status(400).json({ message: "Submit all fields Please" });
@@ -43,10 +42,11 @@ const addUser = async (req, res) => {
 const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log(email)
         if (!email || !password) {
             return res.status(400).json({ message: "Fill all the details" });
         }
-        const searchedUser = await User.findOne({ email: email });
+        let searchedUser = await User.findOne({ email: email });
         if (!searchedUser) {
             return res.status(401).json({ message: "User not exist. Please registered first." })
         }
@@ -56,19 +56,22 @@ const loginUser = async (req, res) => {
 
         const accessToken = await searchedUser.generateAccessToken();
         const refreshToken = await searchedUser.generateRefreshToken();
-        
+
 
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            sameSite: 'strict',
+            sameSite: 'lax',
+            secure: false,   
             maxAge: 24 * 60 * 60 * 1000
         })
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
-            sameSite: 'strict',
+            sameSite: 'lax',
+            secure: false,
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
-
+        console.log(req.cookies)
+        searchedUser = await User.findOne({ email: email }).select('-password');
         return res.status(201).json({ message: "User Login successfully.", user: searchedUser, accessToken: accessToken, refreshToken: refreshToken });
     } catch (error) {
         console.error("Login Error:", error);
@@ -107,9 +110,16 @@ const refreshAccessToken = async (req, res) => {
 
 const logoutUser = async (req, res) => {
     try {
-        res.clearCookie('accessToken');
-        res.clearCookie('refreshToken');
-
+        res.clearCookie('accessToken', {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: false
+        });
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: false
+        });
         return res.status(200).json({ message: "Logged out successfully" });
     } catch (error) {
         return res.status(500).json({ message: "Logout failed" });
@@ -122,10 +132,10 @@ const updateDetails = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        const { name, email , description} = req.body;
+        const { name, email, description } = req.body;
         if (name) user.name = name;
         if (email) user.email = email;
-        if(description)user.description = description;
+        if (description) user.description = description;
         await user.save();
 
         return res.status(200).json({ message: "User details updated", user });
@@ -136,12 +146,12 @@ const updateDetails = async (req, res) => {
 };
 const updatePassword = async (req, res) => {
     try {
-       const user = req.user;
+        const user = req.user;
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        const {password} = req.body;
-        if(!password){
+        const { password } = req.body;
+        if (!password) {
             return res.status(400).json({ message: "Submit field Please" });
         }
         user.password = password;
@@ -185,10 +195,12 @@ const updateAvatar = async (req, res) => {
 const deleteUser = async (req, res) => {
     try {
         const user = req.user;
+        console.log(user)
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        await User.findByIdAndDelete(user._id);
+        const a = await User.findByIdAndDelete(user._id);
+        console.log('a : ',a)
         res.clearCookie('accessToken');
         res.clearCookie('refreshToken');
 
@@ -199,4 +211,14 @@ const deleteUser = async (req, res) => {
     }
 }
 
-module.exports = { addUser, deleteUser, updateAvatar, updateDetails, updatePassword, loginUser, logoutUser, refreshAccessToken}
+const retake = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) return res.status(401).json({ message: 'Not authorized' });
+    res.status(200).json({ user });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
+module.exports = { addUser, deleteUser, updateAvatar, updateDetails, updatePassword, loginUser, logoutUser, refreshAccessToken,retake }
