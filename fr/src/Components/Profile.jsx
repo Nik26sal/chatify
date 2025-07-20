@@ -5,12 +5,14 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 function Profile() {
-    const { user, setUser, loading } = useContext(UserContext); 
+    const { user, setUser, loading } = useContext(UserContext);
     const navigate = useNavigate();
 
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({});
     const [requesting, setRequesting] = useState(false);
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState(''); // 'success' | 'error'
 
     useEffect(() => {
         if (!loading && !user) {
@@ -30,21 +32,31 @@ function Profile() {
     };
 
     const handleSave = () => {
-        setUser(formData);
+        setUser(formData); // In real apps, also send a PATCH/PUT request here.
         setEditMode(false);
+        setMessage('Profile updated successfully.');
+        setMessageType('success');
+        setTimeout(() => setMessage(''), 3000);
     };
 
     const handleLogout = async (e) => {
         e.preventDefault();
         setRequesting(true);
+        setMessage('');
         try {
             await axios.post("http://localhost:3030/api/user/logout", {}, { withCredentials: true });
-            setUser(null);
-            navigate('/');
+            setMessageType('success');
+            setMessage('Logout successful. Redirecting...');
+            setTimeout(() => {
+                setUser(null);
+                navigate('/');
+            }, 1500);
         } catch (error) {
             console.log(error);
+            setMessageType('error');
+            setMessage('Logout failed. Try again.');
+            setRequesting(false);
         }
-        setRequesting(false);
     };
 
     if (loading) return <div className="text-center text-white mt-10">Loading...</div>;
@@ -58,6 +70,17 @@ function Profile() {
                 transition={{ duration: 0.6 }}
                 className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm text-center"
             >
+                {message && (
+                    <div className={`mb-4 px-4 py-3 rounded-lg text-sm font-medium border
+                        ${messageType === 'success'
+                            ? 'bg-green-100 text-green-800 border-green-300'
+                            : 'bg-red-100 text-red-800 border-red-300'
+                        }`}
+                    >
+                        {message}
+                    </div>
+                )}
+
                 <img
                     src={formData?.avatar || 'avatar.png'}
                     alt="Avatar"
@@ -114,6 +137,7 @@ function Profile() {
                     <button
                         onClick={handleLogout}
                         className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition"
+                        disabled={requesting}
                     >
                         {requesting ? 'Logging out...' : 'Logout'}
                     </button>

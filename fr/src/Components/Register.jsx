@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios'
+import axios from 'axios';
 
 function Register() {
     const [formData, setFormData] = useState({
@@ -11,7 +11,9 @@ function Register() {
         password: '',
         avatar: null,
     });
-    const [requesting, setRequesting] = useState(false)
+    const [requesting, setRequesting] = useState(false);
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState(''); // 'success' | 'error'
 
     const navigate = useNavigate();
 
@@ -26,6 +28,7 @@ function Register() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setRequesting(true);
+        setMessage('');
         try {
             const data = new FormData();
             data.append("name", formData.name);
@@ -34,6 +37,7 @@ function Register() {
             if (formData.avatar) {
                 data.append("avatar", formData.avatar);
             }
+
             const response = await axios.post(
                 "http://localhost:3030/api/user/addUser",
                 data,
@@ -43,10 +47,17 @@ function Register() {
                     },
                 }
             );
-            console.log(response);
-            navigate('/login')
+
+            setMessageType('success');
+            setMessage('Registration successful! Redirecting to login...');
+            setTimeout(() => {
+                navigate('/login');
+            }, 1500);
+
         } catch (error) {
-            console.log(error);
+            console.error(error);
+            setMessageType('error');
+            setMessage(error.response?.data?.message || 'Registration failed. Please try again.');
         }
         setRequesting(false);
     };
@@ -62,6 +73,19 @@ function Register() {
                 <h2 className="text-2xl font-bold text-center text-indigo-700 mb-6">
                     Create Your Account
                 </h2>
+
+                {message && (
+                    <div
+                        className={`mb-4 px-4 py-3 rounded-lg text-sm font-medium border
+                            ${messageType === 'success'
+                                ? 'bg-green-100 text-green-800 border-green-300'
+                                : 'bg-red-100 text-red-800 border-red-300'
+                            }`}
+                    >
+                        {message}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -85,7 +109,6 @@ function Register() {
                             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                         <input
@@ -97,7 +120,6 @@ function Register() {
                             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Avatar</label>
                         <input
@@ -114,7 +136,7 @@ function Register() {
                         type="submit"
                         disabled={requesting}
                         className={`w-full py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition font-semibold
-      ${requesting
+                            ${requesting
                                 ? "bg-indigo-400 cursor-not-allowed"
                                 : "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 hover:from-indigo-700 hover:to-pink-600 text-white shadow-lg"
                             }`}

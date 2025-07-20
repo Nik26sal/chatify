@@ -1,14 +1,16 @@
-import { useState ,useContext} from "react";
+import { useState, useContext } from "react";
 import { UserContext } from "../contextApi/UserContext";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-
 function Setting() {
   const [theme, setTheme] = useState("light");
   const [showConfirm, setShowConfirm] = useState(false);
-  const {setUser} = useContext(UserContext)
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('');
+  const { setUser } = useContext(UserContext);
   const navigate = useNavigate();
+
   const handleThemeChange = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
   };
@@ -17,25 +19,31 @@ function Setting() {
     setShowConfirm(true);
   };
 
-  const confirmDelete = async() => {
+  const confirmDelete = async () => {
     setShowConfirm(false);
-   try {
-            const response = await axios.delete(
-                "http://localhost:3030/api/user/deleteAccount",
-                {
-                   headers: {
-                        "Content-Type": "application/json",
-                    },
-                    withCredentials: true
-                }
-            );
-            if (response) {
-                setUser(null);
-                navigate('/login');
-            }
-        } catch (error) {
-            console.log(error);
+    try {
+      const response = await axios.delete(
+        "http://localhost:3030/api/user/deleteAccount",
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
         }
+      );
+      if (response) {
+        setMessageType("success");
+        setMessage("Account deleted successfully. Redirecting...");
+        setTimeout(() => {
+          setUser(null);
+          navigate("/login");
+        }, 1500);
+      }
+    } catch (error) {
+      console.log(error);
+      setMessageType("error");
+      setMessage("Failed to delete account. Please try again.");
+    }
   };
 
   return (
@@ -44,13 +52,29 @@ function Setting() {
         theme === "dark" ? "bg-gray-900" : "bg-gray-100"
       } transition-colors`}
     >
-      <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 w-full max-w-md`}>
+      <div
+        className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 w-full max-w-md relative`}
+      >
         <h2 className="text-2xl font-bold mb-6 text-indigo-700 dark:text-indigo-300 text-center">
           Settings
         </h2>
 
+        {message && (
+          <div
+            className={`mb-6 px-4 py-3 rounded-lg text-sm font-medium border ${
+              messageType === "success"
+                ? "bg-green-100 text-green-800 border-green-300"
+                : "bg-red-100 text-red-800 border-red-300"
+            }`}
+          >
+            {message}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-8">
-          <span className="text-gray-700 dark:text-gray-200 font-medium">Theme</span>
+          <span className="text-gray-700 dark:text-gray-200 font-medium">
+            Theme
+          </span>
           <button
             onClick={handleThemeChange}
             className={`px-4 py-2 rounded-lg font-semibold transition ${
@@ -64,7 +88,9 @@ function Setting() {
         </div>
 
         <div className="flex items-center justify-between mb-4">
-          <span className="text-gray-700 dark:text-gray-200 font-medium">Delete Account</span>
+          <span className="text-gray-700 dark:text-gray-200 font-medium">
+            Delete Account
+          </span>
           <button
             onClick={handleDeleteAccount}
             className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition"

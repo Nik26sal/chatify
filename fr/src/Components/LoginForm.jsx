@@ -11,8 +11,10 @@ function LoginForm() {
         password: '',
     });
     const [requesting, setRequesting] = useState(false);
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState('');
     const navigate = useNavigate();
-    const { setUser } = useContext(UserContext);
+    const { setUser ,user} = useContext(UserContext);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -25,6 +27,7 @@ function LoginForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setRequesting(true);
+        setMessage('');
         try {
             const response = await axios.post(
                 "http://localhost:3030/api/user/login",
@@ -41,11 +44,19 @@ function LoginForm() {
             );
             if (response.data && response.data.user) {
                 setUser(response.data.user);
-                console.log(response.data.user)
-                navigate('/home');
+                setMessageType('success');
+                setMessage('Login successful! Redirecting...');
+                setTimeout(() => {
+                    navigate('/home');
+                }, 1500);
+            } else {
+                setMessageType('error');
+                setMessage('Login failed. Please try again.');
             }
         } catch (error) {
-            console.log(error);
+            console.error(error);
+            setMessageType('error');
+            setMessage(error.response?.data?.message || 'Something went wrong!');
         }
         setRequesting(false);
     };
@@ -61,6 +72,18 @@ function LoginForm() {
                 <h2 className="text-2xl font-bold text-center text-indigo-700 mb-6">
                     Login to Chatify
                 </h2>
+
+                {message && (
+                    <div
+                        className={`mb-4 px-4 py-3 rounded-lg text-sm font-medium
+                        ${messageType === 'success' ? 'bg-green-100 text-green-800 border border-green-300' :
+                            'bg-red-100 text-red-800 border border-red-300'}
+                        `}
+                    >
+                        {message}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -90,7 +113,7 @@ function LoginForm() {
                         type="submit"
                         disabled={requesting}
                         className={`w-full py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition font-semibold
-      ${requesting
+                            ${requesting
                                 ? "bg-indigo-400 cursor-not-allowed"
                                 : "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 hover:from-indigo-700 hover:to-pink-600 text-white shadow-lg"
                             }`}
@@ -114,7 +137,7 @@ function LoginForm() {
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.95 }}
                     className="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-indigo-700 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
-                    onClick={() => navigate(-1)}
+                     onClick={() => !user ? navigate('/') : navigate(-1)}
                 >
                     Back <Send size={18} />
                 </motion.button>

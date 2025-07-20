@@ -1,16 +1,20 @@
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
 import { Link ,NavLink} from 'react-router-dom';
+import { useContext } from 'react';
+import { UserContext } from '../contextApi/UserContext.jsx';
+
 
 
 function Entry() {
+    const {user} = useContext(UserContext);
     return (
         <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white font-sans">
             <header className="flex justify-between items-center p-6 max-w-6xl mx-auto">
                 <div className="text-2xl font-bold text-yellow-300">Chatify</div>
                 <nav className="space-x-6 text-white font-medium">
-                    <Link to="/register" className="hover:underline">Register</Link>
-                    <Link to="/login" className="hover:underline">Login</Link>
+                    {(!user)?<Link to="/register" className="hover:underline">Register</Link>:""}
+                    {(!user)?<Link to="/login" className="hover:underline">Login</Link>:""}
                     <Link to="/home" className="hover:underline">Get Started</Link>
                 </nav>
             </header>
