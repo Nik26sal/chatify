@@ -137,6 +137,14 @@ function LoginForm() {
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.95 }}
                     className="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-indigo-700 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
+                     onClick={() => navigate('/register')}
+                >
+                    Register<Send size={18} />
+                </motion.button>
+                <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-indigo-700 py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
                      onClick={() => !user ? navigate('/') : navigate(-1)}
                 >
                     Back <Send size={18} />

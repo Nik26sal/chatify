@@ -15,7 +15,7 @@ function Entry() {
                 <nav className="space-x-6 text-white font-medium">
                     {(!user)?<Link to="/register" className="hover:underline">Register</Link>:""}
                     {(!user)?<Link to="/login" className="hover:underline">Login</Link>:""}
-                    <Link to="/home" className="hover:underline">Get Started</Link>
+                    <Link to={(!user)?"/login":"/home"} className="hover:underline">Get Started</Link>
                 </nav>
             </header>
             <motion.section
@@ -31,11 +31,11 @@ function Entry() {
                     <p className="text-lg mb-6">
                         The smartest way to connect, collaborate and chat. Powered by AI.
                     </p>
-                    <a href="#get-started">
+                    <Link to={(!user)?"/login":"/home"}>
                         <button className="bg-yellow-400 hover:bg-yellow-300 text-indigo-900 font-bold py-3 px-6 rounded-xl shadow-lg transition duration-300">
                             Get Started
                         </button>
-                    </a>
+                    </Link>
                 </div>
                 <motion.div
                     whileHover={{ scale: 1.05 }}
@@ -81,9 +81,11 @@ function Entry() {
             <section id="get-started" className="py-16 bg-indigo-700 text-white text-center">
                 <h2 className="text-4xl font-bold mb-4">Ready to Chat Smarter?</h2>
                 <p className="mb-6">Join Chatify and experience intelligent messaging.</p>
+                <Link to={(!user)?"/login":"/home"}>
                 <button className="bg-yellow-400 hover:bg-yellow-300 text-indigo-900 font-bold py-3 px-8 rounded-xl shadow-lg transition duration-300">
-                    Get Started for Free
+                    Get Started
                 </button>
+                </Link>
             </section>
 
             <footer className="bg-indigo-900 text-white py-8 mt-16">

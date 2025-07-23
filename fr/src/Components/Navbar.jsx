@@ -62,7 +62,7 @@ function Navbar() {
           Contact-Us
         </NavLink>
       </div>
-
+      <Link to={'/profile'}>
       <div className="flex items-center gap-3">
         <motion.img
          src={user?.avatar}
@@ -73,6 +73,7 @@ function Navbar() {
         />
         <h1 className="text-sm font-semibold">{user?.name}</h1>
       </div>
+      </Link>
     </motion.div>
   );
 }
