@@ -257,6 +257,42 @@ const changeGroupAvatar = async (req, res) => {
         return res.status(500).json({ message: "Internal Server Error" });
     }
 };
+const getChats = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const user = await User.findById(userId).populate({
+            path: 'chat',
+            populate: [
+                {
+                    path: 'message',
+                    model: 'Message'
+                },
+                {
+                    path: 'members',
+                    model: 'User',
+                    select: 'name email avatar'
+                },
+                {
+                    path: 'createdBy',
+                    model: 'User',
+                    select: 'name email avatar'
+                }
+            ]
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        return res.status(200).json({
+            message: "These are your chats",
+            chats: user.chat
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+};
 
 module.exports = {
     createChat,
@@ -265,5 +301,6 @@ module.exports = {
     addMember,
     removeMember,
     changeDescription,
-    changeGroupAvatar
+    changeGroupAvatar,
+    getChats
 };
