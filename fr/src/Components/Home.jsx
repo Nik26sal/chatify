@@ -51,7 +51,7 @@ function Home() {
       <div className={`${full ? "w-1/4" : "w-1/12"} relative bg-white border-r overflow-y-auto`}>
         <div className="flex items-center justify-between p-4 border-b bg-indigo-600 text-white">
           {!search && full && <h1 className="text-xl font-semibold">Chats</h1>}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 mr-4">
             {!search ? (
               <button onClick={toggleSearch} className="text-lg">🔍</button>
             ) : (
@@ -74,6 +74,9 @@ function Home() {
                 </button>
               </div>
             )}
+            <button onClick={toggleChatType} title="Toggle chat type" className="text-lg">
+              {showGroupChats ? "👤" : "👥"}
+            </button>
           </div>
         </div>
 
@@ -105,13 +108,6 @@ function Home() {
             title={full ? "Collapse sidebar" : "Expand sidebar"}
           >
             {full ? "⟨" : "⟩"}
-          </button>
-          <button
-            onClick={toggleChatType}
-            className="bg-indigo-600 text-white text-sm rounded-full px-2 py-1 shadow hover:bg-indigo-700"
-            title="Toggle chat type"
-          >
-            {showGroupChats ? "👤" : "👥"}
           </button>
         </div>
       </div>
