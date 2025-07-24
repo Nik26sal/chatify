@@ -1,5 +1,5 @@
 const express = require('express');
-const { addUser, loginUser, logoutUser, updateDetails, deleteUser, updatePassword, updateAvatar ,refreshAccessToken,retake} = require('../controller/userController');
+const { addUser, loginUser, logoutUser, updateDetails, deleteUser, updatePassword, updateAvatar ,refreshAccessToken,retake,searchUser } = require('../controller/userController');
 const { upload } = require('../cloudItems/multer.js');
 const authorizeduser = require('../middlewares/authorized.js');
 
@@ -14,5 +14,6 @@ router.patch('/updatePassword', authorizeduser, updatePassword);
 router.get('/me', authorizeduser, retake);
 router.patch('/updateAvatar', authorizeduser, upload.single('avatar'), updateAvatar);
 router.delete('/deleteAccount', authorizeduser, deleteUser);
+router.get('/getSearchedUser',authorizeduser,searchUser);
 
 module.exports = router;

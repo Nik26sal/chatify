@@ -221,4 +221,26 @@ const retake = async (req, res) => {
   }
 }
 
-module.exports = { addUser, deleteUser, updateAvatar, updateDetails, updatePassword, loginUser, logoutUser, refreshAccessToken,retake }
+const searchUser = async (req, res) => {
+    try {
+        console.log("hit")
+        const { query } = req.query;
+
+        if (!query) {
+            return res.status(400).json({ message: "Search query is required." });
+        }
+
+        const users = await User.find({
+            $or: [
+                { name: { $regex: query, $options: "i" } },
+                { email: { $regex: query, $options: "i" } }
+            ]
+        }).select("-password"); 
+
+        res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+module.exports = { addUser, deleteUser, updateAvatar, updateDetails, updatePassword, loginUser, logoutUser, refreshAccessToken,retake,searchUser }
