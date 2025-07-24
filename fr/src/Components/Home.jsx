@@ -9,14 +9,22 @@ function Home() {
   const [singleChat, setSingleChat] = useState([]);
   const [groupChat, setGroupChat] = useState([]);
   const [showGroupChats, setShowGroupChats] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const toggleFull = () => setFull((prev) => !prev);
   const toggleSearch = () => setSearch((prev) => !prev);
   const toggleChatType = () => setShowGroupChats((prev) => !prev);
 
   useEffect(() => {
-    const fetchChats = async () => {
+    const fetchUserAndChats = async () => {
       try {
+        const userRes = await axios.get("http://localhost:3030/api/user/me", {
+          withCredentials: true,
+        });
+        setCurrentUser(userRes.data.user);
+
         const res = await axios.get("http://localhost:3030/api/chat/getAll", {
           withCredentials: true,
         });
@@ -31,19 +39,22 @@ function Home() {
             group.push(chat);
           }
         });
-
         setSingleChat(single);
         setGroupChat(group);
       } catch (error) {
-        console.error("Error fetching chats:", error);
+        console.error("Error fetching user or chats:", error);
       }
     };
 
-    fetchChats();
+    fetchUserAndChats();
   }, []);
 
   const displayedChats = (showGroupChats ? groupChat : singleChat).filter((chat) =>
     chat.chatName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const existingSingleChatUserIds = singleChat.map((chat) =>
+    chat.members.find((member) => member._id !== currentUser?._id)?._id
   );
 
   return (
@@ -61,12 +72,39 @@ function Home() {
                   value={searchQuery}
                   placeholder="Search..."
                   className="p-2 border rounded text-gray-900"
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={async (e) => {
+                    const query = e.target.value;
+                    setSearchQuery(query);
+
+                    if (query.trim() === "") {
+                      setSearchResults([]);
+                      setIsSearchingUsers(false);
+                      return;
+                    }
+
+                    try {
+                      const res = await axios.get(`http://localhost:3030/api/user/getSearchedUser?query=${query}`, {
+                        withCredentials: true,
+                      });
+
+                      const filtered = res.data.filter((user) =>
+                        user._id !== currentUser?._id &&
+                        !existingSingleChatUserIds.includes(user._id)
+                      );
+
+                      setSearchResults(filtered);
+                      setIsSearchingUsers(true);
+                    } catch (err) {
+                      console.error("Search error:", err);
+                    }
+                  }}
                 />
                 <button
                   onClick={() => {
                     setSearch(false);
                     setSearchQuery("");
+                    setSearchResults([]);
+                    setIsSearchingUsers(false);
                   }}
                   className="text-red-500"
                 >
@@ -81,22 +119,69 @@ function Home() {
         </div>
 
         <div className="p-4 space-y-4">
-          {displayedChats.map((chat) => (
-            <div
-              key={chat._id}
-              className="flex items-center space-x-4 hover:bg-gray-200 p-2 rounded cursor-pointer"
-              onClick={() => setHasChat(true)}
-            >
-              <img src={chat.chatAvatar} alt="Avatar" className="w-10 h-10 rounded-full" />
-              {full && (
-                <div>
-                  <h2 className="font-medium text-gray-900">{chat.chatName}</h2>
-                  <p className="text-sm text-gray-500">{chat.chatdescription}</p>
+          {isSearchingUsers ? (
+            searchResults.length > 0 ? (
+              searchResults.map((user) => (
+                <div
+                  key={user._id}
+                  className="flex items-center justify-between hover:bg-gray-200 p-2 rounded cursor-pointer"
+                >
+                  <div className="flex items-center space-x-4">
+                    <img src={user.avatar} alt="Avatar" className="w-10 h-10 rounded-full" />
+                    {full && (
+                      <div>
+                        <h2 className="font-medium text-gray-900">{user.name}</h2>
+                        <p className="text-sm text-gray-500">{user.email}</p>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await axios.post(
+                          "http://localhost:3030/api/chat/createChat",
+                          { groupMembersId: [user._id] },
+                          { withCredentials: true }
+                        );
+                        alert("Chat created!");
+                        setHasChat(true);
+                        setSearch(false);
+                        setSearchQuery("");
+                        setSearchResults([]);
+                        setIsSearchingUsers(false);
+                      } catch (err) {
+                        console.error("Chat creation error:", err);
+                        alert(err.response?.data?.message || "Failed to create chat");
+                      }
+                    }}
+                    className="text-green-600 text-xl font-bold hover:text-green-800"
+                    title="Start Chat"
+                  >
+                    +
+                  </button>
                 </div>
-              )}
-            </div>
-          ))}
-          {displayedChats.length === 0 && (
+              ))
+            ) : (
+              <div className="text-sm text-gray-400 text-center">No users found</div>
+            )
+          ) : (
+            displayedChats.map((chat) => (
+              <div
+                key={chat._id}
+                className="flex items-center space-x-4 hover:bg-gray-200 p-2 rounded cursor-pointer"
+                onClick={() => setHasChat(true)}
+              >
+                <img src={chat.chatAvatar} alt="Avatar" className="w-10 h-10 rounded-full" />
+                {full && (
+                  <div>
+                    <h2 className="font-medium text-gray-900">{chat.chatName}</h2>
+                    <p className="text-sm text-gray-500">{chat.chatdescription}</p>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+          {!isSearchingUsers && displayedChats.length === 0 && (
             <div className="text-sm text-gray-400 text-center">No chats found</div>
           )}
         </div>
