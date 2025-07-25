@@ -6,6 +6,7 @@ function Home() {
   const [search, setSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasChat, setHasChat] = useState(false);
+  const [selectedChat, setSelectedChat] = useState(null);
   const [singleChat, setSingleChat] = useState([]);
   const [groupChat, setGroupChat] = useState([]);
   const [showGroupChats, setShowGroupChats] = useState(false);
@@ -39,6 +40,7 @@ function Home() {
             group.push(chat);
           }
         });
+
         setSingleChat(single);
         setGroupChat(group);
       } catch (error) {
@@ -165,21 +167,36 @@ function Home() {
               <div className="text-sm text-gray-400 text-center">No users found</div>
             )
           ) : (
-            displayedChats.map((chat) => (
-              <div
-                key={chat._id}
-                className="flex items-center space-x-4 hover:bg-gray-200 p-2 rounded cursor-pointer"
-                onClick={() => setHasChat(true)}
-              >
-                <img src={chat.chatAvatar} alt="Avatar" className="w-10 h-10 rounded-full" />
-                {full && (
-                  <div>
-                    <h2 className="font-medium text-gray-900">{chat.chatName}</h2>
-                    <p className="text-sm text-gray-500">{chat.chatdescription}</p>
-                  </div>
-                )}
-              </div>
-            ))
+            displayedChats.map((chat) => {
+              const isSingle = chat.title === "singleChat";
+              const otherUser =
+                isSingle && chat.members.length > 1
+                  ? chat.members.find((m) => m._id !== currentUser?._id)
+                  : chat.members[0];
+
+              const avatar = isSingle ? otherUser?.avatar : chat.chatAvatar;
+              const name = isSingle ? otherUser?.name : chat.chatName;
+              const description = isSingle ? otherUser?.email : chat.chatdescription;
+
+              return (
+                <div
+                  key={chat._id}
+                  className="flex items-center space-x-4 hover:bg-gray-200 p-2 rounded cursor-pointer"
+                  onClick={() => {
+                    setSelectedChat(chat);
+                    setHasChat(true);
+                  }}
+                >
+                  <img src={avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover" />
+                  {full && (
+                    <div>
+                      <h2 className="font-medium text-gray-900">{name}</h2>
+                      <p className="text-sm text-gray-500">{description}</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
           {!isSearchingUsers && displayedChats.length === 0 && (
             <div className="text-sm text-gray-400 text-center">No chats found</div>
@@ -198,19 +215,34 @@ function Home() {
       </div>
 
       <div className="w-3/4 flex flex-col bg-white">
-        {hasChat ? (
+        {hasChat && selectedChat ? (
           <>
             <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white shadow-md rounded-t-2xl">
               <div className="flex items-center gap-3">
-                <img
-                  src="https://randomuser.me/api/portraits/men/32.jpg"
-                  alt="User Avatar"
-                  className="w-10 h-10 rounded-full border-2 border-white shadow"
-                />
-                <div>
-                  <h2 className="font-semibold text-lg">Selected Chat</h2>
-                  <span className="text-xs text-white/80">Online</span>
-                </div>
+                {(() => {
+                  const isSingle = selectedChat.title === "singleChat";
+                  const otherUser =
+                    isSingle && selectedChat.members.length > 1
+                      ? selectedChat.members.find((m) => m._id !== currentUser?._id)
+                      : selectedChat.members[0];
+
+                  const avatar = isSingle ? otherUser?.avatar : selectedChat.chatAvatar;
+                  const name = isSingle ? otherUser?.name : selectedChat.chatName;
+
+                  return (
+                    <>
+                      <img
+                        src={avatar}
+                        alt="Chat Avatar"
+                        className="w-10 h-10 rounded-full border-2 border-white shadow"
+                      />
+                      <div>
+                        <h2 className="font-semibold text-lg">{name}</h2>
+                        <span className="text-xs text-white/80">Online</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
               <button
                 onClick={() => setHasChat(false)}
