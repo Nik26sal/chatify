@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle, XCircle, SendHorizonal, Users, User, Search, X } from "lucide-react";
 
 function Home() {
   const [full, setFull] = useState(true);
@@ -13,6 +15,8 @@ function Home() {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [message, setMessage] = useState("hello");
+  const [toast, setToast] = useState(null);
 
   const toggleFull = () => setFull((prev) => !prev);
   const toggleSearch = () => setSearch((prev) => !prev);
@@ -51,6 +55,31 @@ function Home() {
     fetchUserAndChats();
   }, []);
 
+  const handleMessage = async (e) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+
+    try {
+      const res = await axios.post(
+        "http://localhost:3030/api/message/sendMessage",
+        {
+          chatId: selectedChat._id,
+          message: message,
+        },
+        { withCredentials: true }
+      );
+
+      console.log("Message sent:", res.data);
+      setMessage("");
+      setToast({ type: "success", message: "Message sent!" });
+    } catch (error) {
+      console.error("Message sending failed:", error);
+      setToast({ type: "error", message: "Failed to send message" });
+    } finally {
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
   const displayedChats = (showGroupChats ? groupChat : singleChat).filter((chat) =>
     chat.chatName.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -59,14 +88,33 @@ function Home() {
     chat.members.find((member) => member._id !== currentUser?._id)?._id
   );
 
+  const Toast = ({ type = "success", message }) => (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className={`fixed top-5 right-5 px-4 py-3 rounded-lg shadow-lg text-white z-50 ${
+        type === "success" ? "bg-green-600" : "bg-red-600"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        {type === "success" ? <CheckCircle size={20} /> : <XCircle size={20} />}
+        <span>{message}</span>
+      </div>
+    </motion.div>
+  );
+
   return (
     <div className="h-screen flex bg-gray-100 text-gray-800">
+      <AnimatePresence>{toast && <Toast type={toast.type} message={toast.message} />}</AnimatePresence>
       <div className={`${full ? "w-1/4" : "w-1/12"} relative bg-white border-r overflow-y-auto`}>
         <div className="flex items-center justify-between p-4 border-b bg-indigo-600 text-white">
           {!search && full && <h1 className="text-xl font-semibold">Chats</h1>}
           <div className="flex items-center space-x-2 mr-4">
             {!search ? (
-              <button onClick={toggleSearch} className="text-lg">🔍</button>
+              <button onClick={toggleSearch} className="text-lg" title="Search">
+                <Search size={20} />
+              </button>
             ) : (
               <div className="flex items-center space-x-2">
                 <input
@@ -85,13 +133,15 @@ function Home() {
                     }
 
                     try {
-                      const res = await axios.get(`http://localhost:3030/api/user/getSearchedUser?query=${query}`, {
-                        withCredentials: true,
-                      });
+                      const res = await axios.get(
+                        `http://localhost:3030/api/user/getSearchedUser?query=${query}`,
+                        { withCredentials: true }
+                      );
 
-                      const filtered = res.data.filter((user) =>
-                        user._id !== currentUser?._id &&
-                        !existingSingleChatUserIds.includes(user._id)
+                      const filtered = res.data.filter(
+                        (user) =>
+                          user._id !== currentUser?._id &&
+                          !existingSingleChatUserIds.includes(user._id)
                       );
 
                       setSearchResults(filtered);
@@ -109,13 +159,14 @@ function Home() {
                     setIsSearchingUsers(false);
                   }}
                   className="text-red-500"
+                  title="Close"
                 >
-                  ✖
+                  <X size={20} />
                 </button>
               </div>
             )}
             <button onClick={toggleChatType} title="Toggle chat type" className="text-lg">
-              {showGroupChats ? "👤" : "👥"}
+              {showGroupChats ? <User size={20} /> : <Users size={20} />}
             </button>
           </div>
         </div>
@@ -145,15 +196,18 @@ function Home() {
                           { groupMembersId: [user._id] },
                           { withCredentials: true }
                         );
-                        alert("Chat created!");
-                        setHasChat(true);
+                        setToast({ type: "success", message: "Chat successfully created!" });
                         setSearch(false);
                         setSearchQuery("");
                         setSearchResults([]);
                         setIsSearchingUsers(false);
                       } catch (err) {
-                        console.error("Chat creation error:", err);
-                        alert(err.response?.data?.message || "Failed to create chat");
+                        setToast({
+                          type: "error",
+                          message: err.response?.data?.message || "Failed to create chat",
+                        });
+                      } finally {
+                        setTimeout(() => setToast(null), 3000);
                       }
                     }}
                     className="text-green-600 text-xl font-bold hover:text-green-800"
@@ -214,6 +268,7 @@ function Home() {
         </div>
       </div>
 
+      {/* Chat Section */}
       <div className="w-3/4 flex flex-col bg-white">
         {hasChat && selectedChat ? (
           <>
@@ -249,16 +304,7 @@ function Home() {
                 className="ml-2 p-2 rounded-full hover:bg-white/20 transition flex items-center justify-center shadow hover:scale-110 active:scale-95"
                 title="Close chat"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X size={24} />
               </button>
             </div>
 
@@ -267,16 +313,24 @@ function Home() {
               <div className="bg-indigo-600 text-white w-fit p-2 rounded-lg ml-auto">Hi there!</div>
             </div>
 
-            <div className="flex items-center p-4 border-t space-x-4 bg-white">
+            <form
+              className="flex items-center p-4 border-t space-x-4 bg-white"
+              onSubmit={handleMessage}
+            >
               <input
                 type="text"
                 placeholder="Type a message..."
                 className="flex-1 p-2 border rounded-lg"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
               />
-              <button className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full transition">
-                ➤
+              <button
+                type="submit"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full transition"
+              >
+                <SendHorizonal size={20} />
               </button>
-            </div>
+            </form>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
