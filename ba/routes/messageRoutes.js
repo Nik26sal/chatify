@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.post('/sendMessage',authorizeduser,sendMessage);
 router.delete('/deleteMessage',authorizeduser,deleteMessage);
-router.get('/getAllMessage',authorizeduser,getAllMessage);
+router.post('/getAllMessage',authorizeduser,getAllMessage);
 
 
 module.exports = router;
