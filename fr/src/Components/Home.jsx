@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, XCircle, SendHorizonal, Users, User, Search, X } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  SendHorizonal,
+  Users,
+  User,
+  Search,
+  X,
+} from "lucide-react";
 
 function Home() {
   const [full, setFull] = useState(true);
@@ -16,6 +24,7 @@ function Home() {
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [message, setMessage] = useState("hello");
+  const [chatMessages, setChatMessages] = useState([]);
   const [toast, setToast] = useState(null);
 
   const toggleFull = () => setFull((prev) => !prev);
@@ -55,6 +64,26 @@ function Home() {
     fetchUserAndChats();
   }, []);
 
+  useEffect(() => {
+    if (selectedChat?._id) {
+      fetchMessage();
+    }
+  }, [selectedChat]);
+
+  const fetchMessage = async () => {
+    if (!selectedChat?._id) return;
+    try {
+      const res = await axios.post(
+        "http://localhost:3030/api/message/getAllMessage",
+        { chatId: selectedChat._id },
+        { withCredentials: true }
+      );
+      setChatMessages(res.data.messages || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const handleMessage = async (e) => {
     e.preventDefault();
     if (!message.trim()) return;
@@ -69,14 +98,15 @@ function Home() {
         { withCredentials: true }
       );
 
-      console.log("Message sent:", res.data);
       setMessage("");
       setToast({ type: "success", message: "Message sent!" });
+      setChatMessages((prev) => [...prev, res.data.message]);
     } catch (error) {
       console.error("Message sending failed:", error);
       setToast({ type: "error", message: "Failed to send message" });
     } finally {
       setTimeout(() => setToast(null), 3000);
+      window.location.reload();
     }
   };
 
@@ -93,9 +123,8 @@ function Home() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`fixed top-5 right-5 px-4 py-3 rounded-lg shadow-lg text-white z-50 ${
-        type === "success" ? "bg-green-600" : "bg-red-600"
-      }`}
+      className={`fixed top-5 right-5 px-4 py-3 rounded-lg shadow-lg text-white z-50 ${type === "success" ? "bg-green-600" : "bg-red-600"
+        }`}
     >
       <div className="flex items-center gap-2">
         {type === "success" ? <CheckCircle size={20} /> : <XCircle size={20} />}
@@ -106,7 +135,10 @@ function Home() {
 
   return (
     <div className="h-screen flex bg-gray-100 text-gray-800">
-      <AnimatePresence>{toast && <Toast type={toast.type} message={toast.message} />}</AnimatePresence>
+      <AnimatePresence>
+        {toast && <Toast type={toast.type} message={toast.message} />}
+      </AnimatePresence>
+
       <div className={`${full ? "w-1/4" : "w-1/12"} relative bg-white border-r overflow-y-auto`}>
         <div className="flex items-center justify-between p-4 border-b bg-indigo-600 text-white">
           {!search && full && <h1 className="text-xl font-semibold">Chats</h1>}
@@ -268,7 +300,6 @@ function Home() {
         </div>
       </div>
 
-      {/* Chat Section */}
       <div className="w-3/4 flex flex-col bg-white">
         {hasChat && selectedChat ? (
           <>
@@ -309,8 +340,19 @@ function Home() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-              <div className="bg-white w-fit p-2 rounded-lg">Hello!</div>
-              <div className="bg-indigo-600 text-white w-fit p-2 rounded-lg ml-auto">Hi there!</div>
+              {chatMessages.map((msg) => {
+                const isSentByCurrentUser = msg.sendBy && msg.sendBy._id === currentUser?._id;
+
+                return (
+                  <div
+                    key={msg._id}
+                    className={`w-fit p-2 rounded-lg ${isSentByCurrentUser ? "bg-indigo-600 text-white ml-auto" : "bg-white"
+                      }`}
+                  >
+                    {msg.message}
+                  </div>
+                );
+              })}
             </div>
 
             <form
