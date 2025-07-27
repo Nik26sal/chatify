@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,6 +10,7 @@ import {
   Search,
   X,
 } from "lucide-react";
+import { io } from "socket.io-client";
 
 function Home() {
   const [full, setFull] = useState(true);
@@ -23,9 +24,10 @@ function Home() {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [message, setMessage] = useState("hello");
+  const [message, setMessage] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
   const [toast, setToast] = useState(null);
+  const socket = useRef(null);
 
   const toggleFull = () => setFull((prev) => !prev);
   const toggleSearch = () => setSearch((prev) => !prev);
@@ -65,12 +67,39 @@ function Home() {
   }, []);
 
   useEffect(() => {
-    if (selectedChat?._id) {
-      fetchMessage();
+    socket.current = io("http://localhost:3030", {
+      withCredentials: true,
+      transports: ["websocket"],
+    });
+
+    socket.current.on("connect", () => {
+      console.log("🟢 Socket connected:", socket.current.id);
+    });
+
+    socket.current.on("receive_message", (newMsg) => {
+      console.log("📥 Message received via socket:", newMsg);
+      setChatMessages((prev) => [...prev, newMsg]);
+      fetchMessages()
+    });
+
+    socket.current.on("disconnect", () => {
+      console.log("🔴 Socket disconnected");
+    });
+
+    return () => {
+      socket.current.disconnect();
+    };
+  }, []);
+
+
+  useEffect(() => {
+    if (selectedChat?._id && socket.current) {
+      fetchMessages();
+      socket.current.emit("join_room", selectedChat._id);
     }
   }, [selectedChat]);
 
-  const fetchMessage = async () => {
+  const fetchMessages = async () => {
     if (!selectedChat?._id) return;
     try {
       const res = await axios.post(
@@ -80,7 +109,7 @@ function Home() {
       );
       setChatMessages(res.data.messages || []);
     } catch (error) {
-      console.error(error);
+      console.error("Failed to fetch messages:", error);
     }
   };
 
@@ -98,15 +127,22 @@ function Home() {
         { withCredentials: true }
       );
 
+      const newMsg = res.data.message;
+
       setMessage("");
+      setChatMessages((prev) => [...prev, newMsg]);
+      socket.current.emit("send_message", {
+        chatId: selectedChat._id,
+        message: newMsg,
+      });
+
       setToast({ type: "success", message: "Message sent!" });
-      setChatMessages((prev) => [...prev, res.data.message]);
+      fetchMessages()
     } catch (error) {
       console.error("Message sending failed:", error);
       setToast({ type: "error", message: "Failed to send message" });
     } finally {
       setTimeout(() => setToast(null), 3000);
-      window.location.reload();
     }
   };
 
