@@ -26,7 +26,7 @@ const sendMessage = async (req, res) => {
         chat.message.push(newMessage._id);
         await chat.save();
 
-        return res.status(201).json({ message: "Message sent", data: newMessage });
+        return res.status(201).json({message:"Message Send Successfuly",data: newMessage });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Internal Server Error" });
