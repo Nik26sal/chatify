@@ -126,8 +126,8 @@ function Home() {
         },
         { withCredentials: true }
       );
-
-      const newMsg = res.data.message;
+      console.log(res.data.data)
+      const newMsg = res.data.data.message;
 
       setMessage("");
       setChatMessages((prev) => [...prev, newMsg]);
