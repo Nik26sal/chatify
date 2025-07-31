@@ -74,7 +74,8 @@ const createChat = async (req, res) => {
             { _id: { $in: allMembers } },
             { $push: { chat: chat._id } }
         );
-
+        const io = req.app.get("io");
+        io.emit("new_chat_created");
         return res.status(201).json({ message: "Chat created successfully", chat });
     } catch (error) {
         console.log(error);
