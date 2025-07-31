@@ -28,13 +28,11 @@ function Home() {
   const [chatMessages, setChatMessages] = useState([]);
   const [toast, setToast] = useState(null);
   const socket = useRef(null);
-
   const toggleFull = () => setFull((prev) => !prev);
   const toggleSearch = () => setSearch((prev) => !prev);
   const toggleChatType = () => setShowGroupChats((prev) => !prev);
 
-  useEffect(() => {
-    const fetchUserAndChats = async () => {
+  const fetchUserAndChats = async () => {
       try {
         const userRes = await axios.get("http://localhost:3030/api/user/me", {
           withCredentials: true,
@@ -63,8 +61,39 @@ function Home() {
       }
     };
 
+  useEffect(() => {
     fetchUserAndChats();
   }, []);
+
+  useEffect(() => {
+  socket.current = io("http://localhost:3030", {
+    withCredentials: true,
+    transports: ["websocket"],
+  });
+
+  socket.current.on("connect", () => {
+    console.log("🟢 Socket connected:", socket.current.id);
+  });
+
+  socket.current.on("receive_message", (newMsg) => {
+    console.log("📥 Message received via socket:", newMsg);
+    setChatMessages((prev) => [...prev, newMsg]);
+    fetchMessages();
+  });
+  socket.current.on("new_chat_created", () => {
+    console.log("🆕 New chat created — refetching chats");
+    fetchUserAndChats();
+  });
+
+  socket.current.on("disconnect", () => {
+    console.log("🔴 Socket disconnected");
+  });
+
+  return () => {
+    socket.current.disconnect();
+  };
+}, []);
+
 
   useEffect(() => {
     socket.current = io("http://localhost:3030", {
