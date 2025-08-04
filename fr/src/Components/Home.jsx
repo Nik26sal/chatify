@@ -96,32 +96,6 @@ function Home() {
 
 
   useEffect(() => {
-    socket.current = io("http://localhost:3030", {
-      withCredentials: true,
-      transports: ["websocket"],
-    });
-
-    socket.current.on("connect", () => {
-      console.log("🟢 Socket connected:", socket.current.id);
-    });
-
-    socket.current.on("receive_message", (newMsg) => {
-      console.log("📥 Message received via socket:", newMsg);
-      setChatMessages((prev) => [...prev, newMsg]);
-      fetchMessages()
-    });
-
-    socket.current.on("disconnect", () => {
-      console.log("🔴 Socket disconnected");
-    });
-
-    return () => {
-      socket.current.disconnect();
-    };
-  }, []);
-
-
-  useEffect(() => {
     if (selectedChat?._id && socket.current) {
       fetchMessages();
       socket.current.emit("join_room", selectedChat._id);
