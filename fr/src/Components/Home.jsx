@@ -9,6 +9,8 @@ import {
   User,
   Search,
   X,
+  PlusCircle,
+  Trash2,
 } from "lucide-react";
 import { io } from "socket.io-client";
 
@@ -27,73 +29,75 @@ function Home() {
   const [message, setMessage] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
   const [toast, setToast] = useState(null);
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [groupUsers, setGroupUsers] = useState([]);
+  const [groupName, setGroupName] = useState("");
+  const [groupChatAvatar, setgroupChatAvatar] = useState(null);
   const socket = useRef(null);
   const toggleFull = () => setFull((prev) => !prev);
   const toggleSearch = () => setSearch((prev) => !prev);
   const toggleChatType = () => setShowGroupChats((prev) => !prev);
 
   const fetchUserAndChats = async () => {
-      try {
-        const userRes = await axios.get("http://localhost:3030/api/user/me", {
-          withCredentials: true,
-        });
-        setCurrentUser(userRes.data.user);
+    try {
+      const userRes = await axios.get("http://localhost:3030/api/user/me", {
+        withCredentials: true,
+      });
+      setCurrentUser(userRes.data.user);
 
-        const res = await axios.get("http://localhost:3030/api/chat/getAll", {
-          withCredentials: true,
-        });
+      const res = await axios.get("http://localhost:3030/api/chat/getAll", {
+        withCredentials: true,
+      });
 
-        const single = [];
-        const group = [];
+      const single = [];
+      const group = [];
 
-        res.data.chats.forEach((chat) => {
-          if (chat.title === "singleChat") {
-            single.push(chat);
-          } else {
-            group.push(chat);
-          }
-        });
+      res.data.chats.forEach((chat) => {
+        if (chat.title === "singleChat") {
+          single.push(chat);
+        } else {
+          group.push(chat);
+        }
+      });
 
-        setSingleChat(single);
-        setGroupChat(group);
-      } catch (error) {
-        console.error("Error fetching user or chats:", error);
-      }
-    };
+      setSingleChat(single);
+      setGroupChat(group);
+    } catch (error) {
+      console.error("Error fetching user or chats:", error);
+    }
+  };
 
   useEffect(() => {
     fetchUserAndChats();
   }, []);
 
   useEffect(() => {
-  socket.current = io("http://localhost:3030", {
-    withCredentials: true,
-    transports: ["websocket"],
-  });
+    socket.current = io("http://localhost:3030", {
+      withCredentials: true,
+      transports: ["websocket"],
+    });
 
-  socket.current.on("connect", () => {
-    console.log("🟢 Socket connected:", socket.current.id);
-  });
+    socket.current.on("connect", () => {
+      console.log("🟢 Socket connected:", socket.current.id);
+    });
 
-  socket.current.on("receive_message", (newMsg) => {
-    console.log("📥 Message received via socket:", newMsg);
-    setChatMessages((prev) => [...prev, newMsg]);
-    fetchMessages();
-  });
-  socket.current.on("new_chat_created", () => {
-    console.log("🆕 New chat created — refetching chats");
-    fetchUserAndChats();
-  });
+    socket.current.on("receive_message", (newMsg) => {
+      setChatMessages((prev) => [...prev, newMsg]);
+      fetchMessages();
+    });
 
-  socket.current.on("disconnect", () => {
-    console.log("🔴 Socket disconnected");
-  });
+    socket.current.on("new_chat_created", () => {
+      fetchUserAndChats();
+    });
 
-  return () => {
-    socket.current.disconnect();
-  };
-}, []);
+    socket.current.on("disconnect", () => {
+      console.log("🔴 Socket disconnected");
+    });
 
+    return () => {
+      socket.current.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     if (selectedChat?._id && socket.current) {
@@ -129,7 +133,7 @@ function Home() {
         },
         { withCredentials: true }
       );
-      console.log(res.data.data)
+
       const newMsg = res.data.data.message;
 
       setMessage("");
@@ -140,7 +144,7 @@ function Home() {
       });
 
       setToast({ type: "success", message: "Message sent!" });
-      fetchMessages()
+      fetchMessages();
     } catch (error) {
       console.error("Message sending failed:", error);
       setToast({ type: "error", message: "Failed to send message" });
@@ -149,12 +153,59 @@ function Home() {
     }
   };
 
+  const handleGroupUserSearch = async (query) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:3030/api/user/getSearchedUser?query=${query}`,
+        { withCredentials: true }
+      );
+      const filtered = res.data.filter(
+        (u) => u._id !== currentUser._id && !groupUsers.find((gu) => gu._id === u._id)
+      );
+      setSearchResults(filtered);
+    } catch (err) {
+      console.error("Group search error:", err);
+    }
+  };
+
+  const createGroupChat = async () => {
+    try {
+      const ids = groupUsers.map((u) => u._id);
+      const formData = new FormData();
+      formData.append("groupName", groupName);
+      formData.append("groupMembersId", JSON.stringify(ids));
+      if (groupChatAvatar) {
+        formData.append("groupChatAvatar", groupChatAvatar);
+      }
+
+      const res = await axios.post(
+        "http://localhost:3030/api/chat/createChat",
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      setToast({ type: "success", message: "Group created!" });
+      setCreatingGroup(false);
+      setGroupUsers([]);
+      setGroupName("");
+      setgroupChatAvatar(null);
+    } catch (err) {
+      setToast({
+        type: "error",
+        message: err.response?.data?.message || "Group creation failed",
+      });
+    } finally {
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
   const displayedChats = (showGroupChats ? groupChat : singleChat).filter((chat) =>
     chat.chatName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const existingSingleChatUserIds = singleChat.map((chat) =>
-    chat.members.find((member) => member._id !== currentUser?._id)?._id
   );
 
   const Toast = ({ type = "success", message }) => (
@@ -174,158 +225,133 @@ function Home() {
 
   return (
     <div className="h-screen flex bg-gray-100 text-gray-800">
-      <AnimatePresence>
-        {toast && <Toast type={toast.type} message={toast.message} />}
-      </AnimatePresence>
-
+      <AnimatePresence>{toast && <Toast type={toast.type} message={toast.message} />}</AnimatePresence>
       <div className={`${full ? "w-1/4" : "w-1/12"} relative bg-white border-r overflow-y-auto`}>
         <div className="flex items-center justify-between p-4 border-b bg-indigo-600 text-white">
           {!search && full && <h1 className="text-xl font-semibold">Chats</h1>}
           <div className="flex items-center space-x-2 mr-4">
-            {!search ? (
-              <button onClick={toggleSearch} className="text-lg" title="Search">
-                <Search size={20} />
-              </button>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  placeholder="Search..."
-                  className="p-2 border rounded text-gray-900"
-                  onChange={async (e) => {
-                    const query = e.target.value;
-                    setSearchQuery(query);
-
-                    if (query.trim() === "") {
-                      setSearchResults([]);
-                      setIsSearchingUsers(false);
-                      return;
-                    }
-
-                    try {
-                      const res = await axios.get(
-                        `http://localhost:3030/api/user/getSearchedUser?query=${query}`,
-                        { withCredentials: true }
-                      );
-
-                      const filtered = res.data.filter(
-                        (user) =>
-                          user._id !== currentUser?._id &&
-                          !existingSingleChatUserIds.includes(user._id)
-                      );
-
-                      setSearchResults(filtered);
-                      setIsSearchingUsers(true);
-                    } catch (err) {
-                      console.error("Search error:", err);
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    setSearch(false);
-                    setSearchQuery("");
-                    setSearchResults([]);
-                    setIsSearchingUsers(false);
-                  }}
-                  className="text-red-500"
-                  title="Close"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-            )}
-            <button onClick={toggleChatType} title="Toggle chat type" className="text-lg">
+            <button onClick={toggleSearch} title="Search">
+              <Search size={20} />
+            </button>
+            <button onClick={toggleChatType} title="Toggle chat type">
               {showGroupChats ? <User size={20} /> : <Users size={20} />}
             </button>
           </div>
         </div>
 
         <div className="p-4 space-y-4">
-          {isSearchingUsers ? (
-            searchResults.length > 0 ? (
-              searchResults.map((user) => (
-                <div
-                  key={user._id}
-                  className="flex items-center justify-between hover:bg-gray-200 p-2 rounded cursor-pointer"
-                >
-                  <div className="flex items-center space-x-4">
-                    <img src={user.avatar} alt="Avatar" className="w-10 h-10 rounded-full" />
-                    {full && (
-                      <div>
-                        <h2 className="font-medium text-gray-900">{user.name}</h2>
-                        <p className="text-sm text-gray-500">{user.email}</p>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await axios.post(
-                          "http://localhost:3030/api/chat/createChat",
-                          { groupMembersId: [user._id] },
-                          { withCredentials: true }
-                        );
-                        setToast({ type: "success", message: "Chat successfully created!" });
-                        setSearch(false);
-                        setSearchQuery("");
-                        setSearchResults([]);
-                        setIsSearchingUsers(false);
-                      } catch (err) {
-                        setToast({
-                          type: "error",
-                          message: err.response?.data?.message || "Failed to create chat",
-                        });
-                      } finally {
-                        setTimeout(() => setToast(null), 3000);
-                      }
-                    }}
-                    className="text-green-600 text-xl font-bold hover:text-green-800"
-                    title="Start Chat"
+          {showGroupChats && !creatingGroup && (
+            <button
+              className="flex items-center gap-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
+              onClick={() => {
+                setCreatingGroup(true);
+                setGroupUsers([]);
+              }}
+            >
+              <PlusCircle size={18} />
+              {full && "Create Group"}
+            </button>
+          )}
+
+          {creatingGroup && (
+            <div className="bg-gray-100 p-3 rounded space-y-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setgroupChatAvatar(e.target.files[0])}
+                className="w-full p-2 border rounded"
+              />
+              <input
+                type="text"
+                placeholder="Group name"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                className="w-full p-2 border rounded"
+              />
+              <input
+                type="text"
+                placeholder="Search users..."
+                onChange={(e) => handleGroupUserSearch(e.target.value)}
+                className="w-full p-2 border rounded"
+              />
+              <div className="flex flex-wrap gap-2">
+                {groupUsers.map((u) => (
+                  <span
+                    key={u._id}
+                    className="bg-indigo-200 px-2 py-1 rounded text-sm flex items-center gap-1"
                   >
-                    +
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div className="text-sm text-gray-400 text-center">No users found</div>
-            )
-          ) : (
-            displayedChats.map((chat) => {
-              const isSingle = chat.title === "singleChat";
-              const otherUser =
-                isSingle && chat.members.length > 1
-                  ? chat.members.find((m) => m._id !== currentUser?._id)
-                  : chat.members[0];
-
-              const avatar = isSingle ? otherUser?.avatar : chat.chatAvatar;
-              const name = isSingle ? otherUser?.name : chat.chatName;
-              const description = isSingle ? otherUser?.email : chat.chatdescription;
-
-              return (
-                <div
-                  key={chat._id}
-                  className="flex items-center space-x-4 hover:bg-gray-200 p-2 rounded cursor-pointer"
-                  onClick={() => {
-                    setSelectedChat(chat);
-                    setHasChat(true);
-                  }}
+                    {u.name}
+                    <button
+                      onClick={() =>
+                        setGroupUsers((prev) => prev.filter((gu) => gu._id !== u._id))
+                      }
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
+                {searchResults.map((u) => (
+                  <div
+                    key={u._id}
+                    className="cursor-pointer hover:bg-gray-200 p-2 rounded"
+                    onClick={() => {
+                      setGroupUsers((prev) => [...prev, u]);
+                      setSearchResults([]);
+                    }}
+                  >
+                    {u.name}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={createGroupChat}
+                  className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
                 >
-                  <img src={avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover" />
-                  {full && (
-                    <div>
-                      <h2 className="font-medium text-gray-900">{name}</h2>
-                      <p className="text-sm text-gray-500">{description}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })
+                  Create
+                </button>
+                <button
+                  onClick={() => setCreatingGroup(false)}
+                  className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           )}
-          {!isSearchingUsers && displayedChats.length === 0 && (
-            <div className="text-sm text-gray-400 text-center">No chats found</div>
-          )}
+
+          {displayedChats.map((chat) => {
+            const isSingle = chat.title === "singleChat";
+            const otherUser =
+              isSingle && chat.members.length > 1
+                ? chat.members.find((m) => m._id !== currentUser?._id)
+                : chat.members[0];
+
+            const avatar = isSingle ? otherUser?.avatar : chat.chatAvatar;
+            const name = isSingle ? otherUser?.name : chat.chatName;
+            const description = isSingle ? otherUser?.email : chat.chatdescription;
+
+            return (
+              <div
+                key={chat._id}
+                className="flex items-center space-x-4 hover:bg-gray-200 p-2 rounded cursor-pointer"
+                onClick={() => {
+                  setSelectedChat(chat);
+                  setHasChat(true);
+                }}
+              >
+                <img src={avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover" />
+                {full && (
+                  <div>
+                    <h2 className="font-medium text-gray-900">{name}</h2>
+                    <p className="text-sm text-gray-500">{description}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="absolute top-4 right-2 z-10 flex flex-col gap-2 items-center">
@@ -338,7 +364,6 @@ function Home() {
           </button>
         </div>
       </div>
-
       <div className="w-3/4 flex flex-col bg-white">
         {hasChat && selectedChat ? (
           <>
@@ -385,10 +410,15 @@ function Home() {
                 return (
                   <div
                     key={msg._id}
-                    className={`w-fit p-2 rounded-lg ${isSentByCurrentUser ? "bg-indigo-600 text-white ml-auto" : "bg-white"
+                    className={`w-fit max-w-xs break-words p-2 rounded-lg shadow ${isSentByCurrentUser ? "bg-indigo-600 text-white ml-auto" : "bg-white text-gray-800"
                       }`}
                   >
-                    {msg.message}
+                    {!isSentByCurrentUser && (
+                      <div className="text-xs font-semibold text-indigo-500 mb-1">
+                        {msg.sendBy?.name || "Unknown"}
+                      </div>
+                    )}
+                    <div>{msg.message}</div>
                   </div>
                 );
               })}
