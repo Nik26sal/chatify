@@ -6,12 +6,19 @@ const createChat = async (req, res) => {
     try {
         const userId = req.user._id;
         const { groupMembersId, groupName } = req.body;
-        if (!Array.isArray(groupMembersId) || groupMembersId.length < 1) {
+        let membersArray = groupMembersId;
+        if (typeof groupMembersId === "string") {
+            try {
+                membersArray = JSON.parse(groupMembersId);
+            } catch (err) {
+                return res.status(400).json({ message: "Invalid format for groupMembersId" });
+            }
+        }
+        if (!Array.isArray(membersArray) || membersArray.length < 1) {
             return res.status(400).json({ message: "Friend ID array is required" });
         }
-        
         let groupMembers = [];
-        for (const groupMemberId of groupMembersId) {
+        for (const groupMemberId of membersArray) {
             if (userId.toString() === groupMemberId) {
                 return res.status(400).json({ message: "You cannot chat with yourself" });
             }
@@ -21,12 +28,10 @@ const createChat = async (req, res) => {
             }
             groupMembers.push(groupMemberId);
         }
-        
         let title = (groupMembers.length === 1) ? 'singleChat' : 'groupChat';
         let chatName;
         let groupChatAvatar = null;
         let chatAvatar;
-
         if (title === 'singleChat') {
             const existingChat = await Chat.findOne({
                 title: 'singleChat',
@@ -40,19 +45,20 @@ const createChat = async (req, res) => {
             chatAvatar = friendUser.avatar;
         } else {
             if (req.file?.fieldname === 'groupChatAvatar') {
-            try {
-                const avatarUploadResult = await uploadCloudinary(req.file.path);
-                if (!avatarUploadResult?.secure_url) {
-                    return res.status(500).json({ message: "Failed to upload avatar." });
+                try {
+                    const avatarUploadResult = await uploadCloudinary(req.file.path);
+                    if (!avatarUploadResult?.secure_url) {
+                        return res.status(500).json({ message: "Failed to upload avatar." });
+                    }
+                    groupChatAvatar = avatarUploadResult.secure_url;
+                } catch (uploadError) {
+                    console.error("Avatar Upload Error:", uploadError);
+                    return res.status(500).json({ message: "Error uploading avatar." });
                 }
-                groupChatAvatar = avatarUploadResult.secure_url;
-            } catch (uploadError) {
-                console.error("Avatar Upload Error:", uploadError);
-                return res.status(500).json({ message: "Error uploading avatar." });
+            } else if (!groupName) {
+                return res.status(400).json({ message: "Avatar is required for group chats." });
             }
-        } else if (!groupName) {
-            return res.status(400).json({ message: "Avatar is required for group chats." });
-        }
+
             if (groupName && groupChatAvatar) {
                 chatName = groupName;
                 chatAvatar = groupChatAvatar;
@@ -60,7 +66,6 @@ const createChat = async (req, res) => {
                 return res.status(400).json({ message: "Please provide group name and groupChat Avatar if this chat is a Group-Chat" });
             }
         }
-
         const chat = await Chat.create({
             createdBy: userId,
             members: [userId, ...groupMembers],
@@ -68,7 +73,6 @@ const createChat = async (req, res) => {
             chatName: chatName,
             chatAvatar: chatAvatar
         });
-
         const allMembers = [userId, ...groupMembers];
         await User.updateMany(
             { _id: { $in: allMembers } },
@@ -76,9 +80,10 @@ const createChat = async (req, res) => {
         );
         const io = req.app.get("io");
         io.emit("new_chat_created");
+
         return res.status(201).json({ message: "Chat created successfully", chat });
     } catch (error) {
-        console.log(error);
+        console.error(error);
         return res.status(500).json({ message: "Internal Server Error" });
     }
 };
