@@ -53,7 +53,7 @@ function Home() {
 
       const single = [];
       const group = [];
-
+      
       res.data.chats.forEach((chat) => {
         if (chat.title === "singleChat") {
           single.push(chat);
@@ -159,7 +159,7 @@ function Home() {
       );
       console.log(res.data)
       const filtered = res.data.filter(
-        (u) => u._id !== currentUser._id && !displayedChats.some((c) => c.members[0]._id === u._id)
+        (u) => (u._id !== currentUser._id && !(displayedChats.some((c) => (c.members[0]._id === u._id) || (c.members[1]._id === u._id))))
       );
       setSearchResults(filtered);
     } catch (err) {
