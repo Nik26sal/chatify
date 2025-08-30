@@ -3,7 +3,6 @@ const User = require('../Models/userModel');
 
 const authorizeduser = async (req, res, next) => {
     try {
-        console.log(req.cookies)
         const accessToken = req.cookies.accessToken;
         if (!accessToken) {
             return res.status(401).json({ message: "No access token provided" });

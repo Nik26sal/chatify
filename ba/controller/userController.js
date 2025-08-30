@@ -223,7 +223,6 @@ const retake = async (req, res) => {
 
 const searchUser = async (req, res) => {
     try {
-        console.log("hit")
         const { query } = req.query;
 
         if (!query) {
