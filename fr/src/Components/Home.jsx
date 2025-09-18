@@ -46,7 +46,6 @@ function Home() {
         withCredentials: true,
       });
       setCurrentUser(userRes.data.user);
-
       const res = await axios.get("http://localhost:3030/api/chat/getAll", {
         withCredentials: true,
       });
@@ -131,8 +130,7 @@ function Home() {
         { withCredentials: true }
       );
 
-      const newMsg = res.data.data.message;
-
+      const newMsg = res.data.data;
       setMessage("");
       setChatMessages((prev) => [...prev, newMsg]);
       socket.current.emit("send_message", {
