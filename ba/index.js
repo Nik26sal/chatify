@@ -48,9 +48,10 @@ io.on('connection', (socket) => {
     console.log(`✅ Socket ${socket.id} joined room ${roomId}`);
   });
   socket.on('send_message', (data) => {
+    console.log(data)
     const { chatId } = data;
     console.log(`📩 Message to chat room ${chatId}:`, data);
-    socket.to(chatId).emit('receive_message', data);
+    socket.to(chatId).emit('receive_message', data.message);
   });
 
   socket.on('disconnect', () => {

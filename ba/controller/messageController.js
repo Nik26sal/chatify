@@ -25,7 +25,7 @@ const sendMessage = async (req, res) => {
         });
         chat.message.push(newMessage._id);
         await chat.save();
-
+        await newMessage.populate('sendBy');
         return res.status(201).json({message:"Message Send Successfuly",data: newMessage });
     } catch (error) {
         console.error(error);
